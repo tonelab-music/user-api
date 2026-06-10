@@ -45,8 +45,8 @@ jobs:
             }
         # Stop workflow if preflight checks fail (action returns non-zero)
 
-      - name: Deploy
-        id: deploy
+      - name: Run Deploy
+        id: run_deploy
         run: |
           echo "Mock deploying version ${{ inputs.version }} to ${{ inputs.environment }}..."
         continue-on-error: true
