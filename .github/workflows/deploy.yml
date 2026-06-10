@@ -45,18 +45,13 @@ jobs:
             }
         # Stop workflow if preflight checks fail (action returns non-zero)
 
-      - name: Run Deploy
-        id: run_deploy
+      - name: Deploy
+        id: deploy
         run: |
           echo "Mock deploying version ${{ inputs.version }} to ${{ inputs.environment }}..."
         continue-on-error: true
 
-  track-deploy:
-    name: Track Deployment in Versioner
-    runs-on: ubuntu-latest
-    needs: deploy
-    steps:
-     - name: Track deployment completion in Versioner
+      - name: Track deployment completion in Versioner
         if: always() && steps.track_start.outcome == 'success'
         uses: versioner-io/versioner-github-action@main
         with:
@@ -65,4 +60,12 @@ jobs:
           version: ${{ inputs.version }}
           environment: ${{ inputs.environment }}
           event_type: deployment
-          status: success
+          status: ${{ job.status == 'cancelled' && 'aborted' || (steps.deploy.outcome == 'success' && 'completed' || 'failed') }}
+          metadata: |
+            {
+              "triggered_by": "${{ github.actor }}",
+              "workflow_run_id": "${{ github.run_id }}",
+              "deploy_outcome": "${{ steps.deploy.outcome }}",
+              "job_status": "${{ job.status }}"
+            }
+  
