@@ -1,0 +1,25 @@
+name: pull-request
+
+on:
+  pull_request:
+    branches:
+      - '**'
+
+jobs:
+  run-tests:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
+      contents: read
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+
+      - name: Mock test step
+        id: test
+        run: |
+          echo "Mock running tests"
+        continue-on-error: true

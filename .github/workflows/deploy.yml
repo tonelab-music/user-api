@@ -1,1 +1,68 @@
-# placeholder
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Build number to deploy (e.g., 42, 123)'
+        required: true
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        type: choice
+        options:
+          - development
+          - production
+
+jobs:
+  deploy:
+    name: Deploy version ${{ inputs.version }} to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Track deployment start in Versioner
+        id: track_start
+        uses: versioner-io/versioner-github-action@main
+        with:
+          api_key: ${{ secrets.VERSIONER_API_KEY }}
+          product_name: versioner-api
+          version: ${{ inputs.version }}
+          environment: ${{ inputs.environment }}
+          event_type: deployment
+          status: started
+          fail_on_api_error: false
+          metadata: |
+            {
+              "triggered_by": "${{ github.actor }}",
+              "workflow_run_id": "${{ github.run_id }}"
+            }
+        # Stop workflow if preflight checks fail (action returns non-zero)
+
+      - name: Deploy
+        id: deploy
+        run: |
+          echo "Mock deploying version ${{ inputs.version }} to ${{ inputs.environment }}..."
+        continue-on-error: true
+
+      - name: Track deployment completion in Versioner
+        if: always() && steps.track_start.outcome == 'success'
+        uses: versioner-io/versioner-github-action@main
+        with:
+          api_key: ${{ secrets.VERSIONER_API_KEY }}
+          product_name: versioner-api
+          version: ${{ inputs.version }}
+          environment: ${{ inputs.environment }}
+          event_type: deployment
+          status: ${{ job.status == 'cancelled' && 'aborted' || (steps.deploy.outcome == 'success' && steps.health_check.outcome == 'success' && 'completed' || 'failed') }}
+          metadata: |
+            {
+              "triggered_by": "${{ github.actor }}",
+              "workflow_run_id": "${{ github.run_id }}",
+              "deploy_outcome": "${{ steps.deploy.outcome }}",
+              "job_status": "${{ job.status }}"
+            }
