@@ -68,7 +68,7 @@ jobs:
         uses: versioner-io/versioner-github-action@main
         with:
           api_key: ${{ secrets.VERSIONER_API_KEY }}
-          product_name: versioner-api
+          product_name: user-api
           version: ${{ needs.build-and-push.outputs.build_number }}
           event_type: build
           status: success
